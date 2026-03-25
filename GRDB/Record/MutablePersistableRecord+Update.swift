@@ -213,7 +213,7 @@ extension MutablePersistableRecord {
 // MARK: - Update and Fetch
 
 extension MutablePersistableRecord {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     /// Executes an `UPDATE RETURNING` statement on all columns, and returns a
     /// new record built from the updated row.
     ///
@@ -839,7 +839,7 @@ extension MutablePersistableRecord {
 // MARK: - Internals
 
 extension MutablePersistableRecord {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     @inlinable // allow specialization so that empty callbacks are removed
     func updateChangesAndFetch<T>(
         _ db: Database,
@@ -956,8 +956,11 @@ extension MutablePersistableRecord {
             // Nil primary key
             try dao.recordNotFound()
         }
-        let returned = try fetch(statement)
-        if db.changesCount == 0 {
+        var changesCount = 0
+        let returned = try db.countChanges(&changesCount, forTable: type(of: self).databaseTableName) {
+            try fetch(statement)
+        }
+        if changesCount == 0 {
             // No row was updated
             try dao.recordNotFound()
         }

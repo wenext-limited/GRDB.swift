@@ -1256,7 +1256,7 @@ class MutablePersistableRecordTests: GRDBTestCase {
 
 extension MutablePersistableRecordTests {
     func test_insertAndFetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1277,7 +1277,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_insertAndFetch_as() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1327,7 +1327,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_insertAndFetch_selection_fetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1414,7 +1414,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_insertAndFetch_fetch_select() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1509,7 +1509,7 @@ extension MutablePersistableRecordTests {
 
 extension MutablePersistableRecordTests {
     func test_saveAndFetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1530,7 +1530,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_saveAndFetch_as() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1656,7 +1656,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_saveAndFetch_selection_fetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1786,7 +1786,7 @@ extension MutablePersistableRecordTests {
 
 extension MutablePersistableRecordTests {
     func test_updateAndFetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1837,7 +1837,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateAndFetch_as() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1887,7 +1887,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateAndFetch_selection_fetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1941,7 +1941,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateAndFetch_columns_selection_fetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -1995,7 +1995,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateChangesAndFetch_modify() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -2056,7 +2056,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateChangesAndFetch_as_modify() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -2116,7 +2116,7 @@ extension MutablePersistableRecordTests {
     }
     
     func test_updateChangesAndFetch_selection_fetch_modify() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("RETURNING clause is not available")
         }
@@ -2186,7 +2186,7 @@ extension MutablePersistableRecordTests {
 
 extension MutablePersistableRecordTests {
     func test_upsert() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("UPSERT is not available")
         }
@@ -2334,8 +2334,8 @@ extension MutablePersistableRecordTests {
         }
     }
 
-    func test_upsertAndFetch_do_update_set_where() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+    func test_upsertAndFetch_do_update_set_where_with_default_strategy() throws {
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("UPSERT is not available")
         }
@@ -2351,10 +2351,10 @@ extension MutablePersistableRecordTests {
                 try db.execute(sql: """
                     CREATE TABLE vocabulary(
                       word TEXT PRIMARY KEY,
-                      kind TEXT,
+                      kind TEXT NOT NULL,
                       isTainted BOOLEAN DEFAULT 0,
                       count INT DEFAULT 1);
-                    INSERT INTO vocabulary(word, isTainted) VALUES('jovial', 1);
+                    INSERT INTO vocabulary(word, kind, isTainted) VALUES('jovial', 'name', 1);
                     """)
                 
                 struct Vocabulary: Decodable, MutablePersistableRecord, FetchableRecord {
@@ -2374,6 +2374,36 @@ extension MutablePersistableRecordTests {
                     mutating func didInsert(_ inserted: InsertionSuccess) {
                         rowID = inserted.rowID
                     }
+                }
+                
+                // No column specified, no unique index specified
+                do {
+                    var vocabulary = Vocabulary(word: "jovial", kind: "ambiguous", isTainted: true)
+                    let upserted = try vocabulary.upsertAndFetch(db)
+                    
+                    // Test didSave
+                    XCTAssertEqual(vocabulary.rowID, 1)
+                    
+                    // Test SQL
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','ambiguous',1) \
+                        ON CONFLICT \
+                        DO UPDATE SET "kind" = "excluded"."kind", "isTainted" = "excluded"."isTainted" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "ambiguous", "isTainted": 1, "count": 1],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "ambiguous")
+                    XCTAssertEqual(upserted.isTainted, true)
+                    XCTAssertEqual(upserted.count, 1)
                 }
                 
                 // One column with specific assignment (count)
@@ -2490,8 +2520,193 @@ extension MutablePersistableRecordTests {
         }
     }
     
+    func test_upsertAndFetch_do_update_set_where_with_noColumnUnlessSpecified_strategy() throws {
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
+        guard Database.sqliteLibVersionNumber >= 3035000 else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#else
+        guard #available(iOS 15, macOS 12, tvOS 15, watchOS 8, *) else {
+            throw XCTSkip("UPSERT is not available")
+        }
+#endif
+        
+        try makeDatabaseQueue().write { db in
+            // Test exemples of https://www.sqlite.org/lang_UPSERT.html
+            do {
+                try db.execute(sql: """
+                    CREATE TABLE vocabulary(
+                      word TEXT PRIMARY KEY,
+                      kind TEXT NOT NULL,
+                      isTainted BOOLEAN DEFAULT 0,
+                      count INT DEFAULT 1);
+                    INSERT INTO vocabulary(word, kind, isTainted) VALUES('jovial', 'name', 1);
+                    """)
+                
+                struct Vocabulary: Decodable, MutablePersistableRecord, FetchableRecord {
+                    var word: String
+                    var kind: String
+                    var isTainted: Bool
+                    var count: Int?
+                    var rowID: Int64?
+                    
+                    func encode(to container: inout PersistenceContainer) {
+                        // Don't encode count and rowID
+                        container["word"] = word
+                        container["kind"] = kind
+                        container["isTainted"] = isTainted
+                    }
+                    
+                    mutating func didInsert(_ inserted: InsertionSuccess) {
+                        rowID = inserted.rowID
+                    }
+                }
+                
+                // No column specified, no unique index specified
+                do {
+                    var vocabulary = Vocabulary(word: "jovial", kind: "ambiguous", isTainted: true)
+                    let upserted = try vocabulary.upsertAndFetch(db, updating: .noColumnUnlessSpecified)
+                    
+                    // Test didSave
+                    XCTAssertEqual(vocabulary.rowID, 1)
+                    
+                    // Test SQL
+                    // Note that something is updated, so that we have
+                    // something to return. See <https://sqlite.org/forum/forumpost/1ead75e2c45de9a5>
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','ambiguous',1) \
+                        ON CONFLICT DO UPDATE SET "word" = "word" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "name", "isTainted": 1, "count": 1],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "name")
+                    XCTAssertEqual(upserted.isTainted, true)
+                    XCTAssertEqual(upserted.count, 1)
+                }
+                
+                do {
+                    var vocabulary = Vocabulary(word: "jovial", kind: "adjective", isTainted: false)
+                    let upserted = try vocabulary.upsertAndFetch(
+                        db, onConflict: ["word"],
+                        updating: .noColumnUnlessSpecified,
+                        doUpdate: { excluded in
+                            [Column("count") += 1,                     // increment count
+                             Column("kind").set(to: excluded["kind"])] // overwrite kind
+                        })
+                    
+                    // Test didSave
+                    XCTAssertEqual(vocabulary.rowID, 1)
+                    
+                    // Test SQL
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','adjective',0) \
+                        ON CONFLICT("word") \
+                        DO UPDATE SET "count" = "count" + 1, "kind" = "excluded"."kind" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "adjective", "isTainted": 1, "count": 2],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "adjective")
+                    XCTAssertEqual(upserted.isTainted, true)   // Not overwritten
+                    XCTAssertEqual(upserted.count, 2)          // incremented
+                }
+                
+                // All columns with no assignment: make sure we return something
+                do {
+                    var vocabulary = Vocabulary(word: "jovial", kind: "ignored", isTainted: false)
+                    let upserted = try vocabulary.upsertAndFetch(
+                        db, onConflict: ["word"],
+                        updating: .noColumnUnlessSpecified,
+                        doUpdate: { _ in
+                            []
+                        })
+                    
+                    // Test didSave
+                    XCTAssertEqual(vocabulary.rowID, 1)
+                    
+                    // Test SQL (the DO UPDATE clause is not empty, so that the
+                    // RETURNING clause could return something).
+                    XCTAssertEqual(lastSQLQuery, """
+                        INSERT INTO "vocabulary" ("word", "kind", "isTainted") \
+                        VALUES ('jovial','ignored',0) \
+                        ON CONFLICT("word") \
+                        DO UPDATE SET "word" = "word" \
+                        RETURNING *, "rowid"
+                        """)
+                    
+                    // Test database state
+                    let rows = try Row.fetchAll(db, sql: "SELECT * FROM vocabulary")
+                    XCTAssertEqual(rows, [
+                        ["word": "jovial", "kind": "adjective", "isTainted": 1, "count": 2],
+                    ])
+                    
+                    // Test upserted record
+                    XCTAssertEqual(upserted.word, "jovial")
+                    XCTAssertEqual(upserted.kind, "adjective")
+                    XCTAssertEqual(upserted.isTainted, true)
+                    XCTAssertEqual(upserted.count, 2)
+                }
+            }
+            
+            do {
+                try db.execute(sql: """
+                    CREATE TABLE phonebook(name TEXT PRIMARY KEY, phonenumber TEXT);
+                    INSERT INTO phonebook(name,phonenumber) VALUES('Alice','ignored');
+                    """)
+                
+                struct Phonebook: Codable, MutablePersistableRecord, FetchableRecord {
+                    var name: String
+                    var phonenumber: String
+                }
+                
+                var phonebook = Phonebook(name: "Alice", phonenumber: "704-555-1212")
+                let upserted = try phonebook.upsertAndFetch(
+                    db, onConflict: ["name"],
+                    updating: .noColumnUnlessSpecified,
+                    doUpdate: { excluded in
+                        [Column("phonenumber").set(to: excluded["phonenumber"])]
+                    })
+                
+                // Test SQL
+                XCTAssertEqual(lastSQLQuery, """
+                    INSERT INTO "phonebook" ("name", "phonenumber") \
+                    VALUES ('Alice','704-555-1212') \
+                    ON CONFLICT("name") DO UPDATE SET "phonenumber" = "excluded"."phonenumber" \
+                    RETURNING *, "rowid"
+                    """)
+                
+                // Test database state
+                let rows = try Row.fetchAll(db, sql: "SELECT * FROM phonebook")
+                XCTAssertEqual(rows, [
+                    ["name": "Alice", "phonenumber": "704-555-1212"],
+                ])
+                
+                // Test upserted record
+                XCTAssertEqual(upserted.name, "Alice")
+                XCTAssertEqual(upserted.phonenumber, "704-555-1212")
+            }
+        }
+    }
+    
     func test_upsertAndFetch() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("UPSERT is not available")
         }
@@ -2594,7 +2809,7 @@ extension MutablePersistableRecordTests {
     }
 
     func test_upsertAndFetch_as() throws {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
         guard Database.sqliteLibVersionNumber >= 3035000 else {
             throw XCTSkip("UPSERT is not available")
         }
@@ -2796,3 +3011,47 @@ extension MutablePersistableRecordTests {
         } catch DatabaseError.SQLITE_MISUSE { }
     }
 }
+
+#if SQLITE_ENABLE_FTS5
+class Issue1820Tests: GRDBTestCase {
+    // Regression test for https://github.com/groue/GRDB.swift/issues/1820
+    func testIssue1820() throws {
+        struct Serving: Codable, FetchableRecord, PersistableRecord {
+            let id: UUID
+            var description: String
+            var foodId: String
+            
+            static let author = hasOne(Food.self)
+        }
+        
+        struct Food: Codable, FetchableRecord, PersistableRecord {
+            let id: UUID
+            var name: String
+            var foodId: String
+        }
+        
+        let dbQueue = try makeDatabaseQueue()
+        try dbQueue.write { db in
+            try db.create(table: "food") { t in
+                t.column("id", .blob).primaryKey()
+                t.column("name", .text)
+                t.column("foodId", .text).unique()
+            }
+            
+            try db.create(table: "serving") { t in
+                t.column("id", .blob).primaryKey()
+                t.column("description", .text)
+                t.column("foodId", .text).references("food", column: "foodId")
+            }
+            
+            try db.create(virtualTable: "food_fts", using: FTS5()) { t in
+                t.synchronize(withTable: "food")
+                t.column("name")
+            }
+            
+            try Food(id: UUID(), name: "Apple", foodId: "apple").save(db)
+            try Serving(id: UUID(), description: "Apple", foodId: "apple").save(db)
+        }
+    }
+}
+#endif

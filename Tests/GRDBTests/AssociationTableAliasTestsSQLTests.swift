@@ -130,7 +130,6 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
         }
     }
     
-    #if compiler(>=6.1)
     func testTableAliasBasics_swift61() throws {
         // A table reference qualifies all unqualified selectables, expressions, and orderings
         
@@ -149,7 +148,7 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
                     """
                 
                 do {
-                    let request = A
+                    let request: QueryInterfaceRequest<A> = A
                         .aliased(alias)
                         .select(\.name)
                         .filter(key: 1)
@@ -160,7 +159,7 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
                     try assertEqualSQL(db, request, expectedSQL)
                 }
                 do {
-                    let request = A
+                    let request: QueryInterfaceRequest<A> = A
                         .select(\.name)
                         .filter(key: 1)
                         .filter { $0.name != nil && alias.name == "foo" }
@@ -184,7 +183,7 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
                     """
                 
                 do {
-                    let request = A
+                    let request: QueryInterfaceRequest<A> = A
                         .aliased(alias)
                         .select(\.name)
                         .filter(key: 1)
@@ -195,7 +194,7 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
                     try assertEqualSQL(db, request, expectedSQL)
                 }
                 do {
-                    let request = A
+                    let request: QueryInterfaceRequest<A> = A
                         .select(\.name)
                         .filter(key: 1)
                         .filter { $0.name != nil && alias.name == "foo" }
@@ -208,7 +207,6 @@ class AssociationTableAliasTestsSQLTests : GRDBTestCase {
             }
         }
     }
-    #endif
     
     func testRecursiveRelationDepth1() throws {
         // A.include(A.parent)

@@ -55,7 +55,7 @@ extension PersistableRecord {
 // MARK: - Insert and Fetch
 
 extension PersistableRecord {
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     /// Executes an `INSERT RETURNING` statement, and returns a new record built
     /// from the inserted row.
     ///
@@ -261,8 +261,8 @@ extension PersistableRecord {
         _ db: Database,
         onConflict conflictResolution: Database.ConflictResolution? = nil,
         fetch: (Statement) throws -> T,
-        select: (DatabaseComponents) -> [any SQLSelectable])
-    throws -> T
+        select: (DatabaseComponents) throws -> [any SQLSelectable]
+    ) throws -> T
     where Self: TableRecord
     {
         try insertAndFetch(db, onConflict: conflictResolution, selection: select(Self.databaseComponents), fetch: fetch)
@@ -476,8 +476,8 @@ extension PersistableRecord {
         _ db: Database,
         onConflict conflictResolution: Database.ConflictResolution? = nil,
         fetch: (Statement) throws -> T,
-        select: (DatabaseComponents) -> [any SQLSelectable])
-    throws -> T
+        select: (DatabaseComponents) throws -> [any SQLSelectable]
+    ) throws -> T
     where Self: TableRecord
     {
         try insertAndFetch(

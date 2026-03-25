@@ -10,14 +10,14 @@
 </p>
 
 <p align="center">
-    <a href="https://developer.apple.com/swift/"><img alt="Swift 6" src="https://img.shields.io/badge/swift-6-orange.svg?style=flat"></a>
+    <a href="https://developer.apple.com/swift/"><img alt="Swift 6.1" src="https://img.shields.io/badge/swift-6.1-orange.svg?style=flat"></a>
     <a href="https://github.com/groue/GRDB.swift/blob/master/LICENSE"><img alt="License" src="https://img.shields.io/github/license/groue/GRDB.swift.svg?maxAge=2592000"></a>
     <a href="https://github.com/groue/GRDB.swift/actions/workflows/CI.yml"><img alt="CI Status" src="https://github.com/groue/GRDB.swift/actions/workflows/CI.yml/badge.svg?branch=master"></a>
 </p>
 
-**Latest release**: May 11, 2025 • [version 7.5.0](https://github.com/groue/GRDB.swift/tree/v7.5.0) • [CHANGELOG](CHANGELOG.md) • [Migrating From GRDB 6 to GRDB 7](Documentation/GRDB7MigrationGuide.md)
+**Latest release**: February 15, 2026 • [version 7.10.0](https://github.com/groue/GRDB.swift/tree/v7.10.0) • [CHANGELOG](CHANGELOG.md) • [Migrating From GRDB 6 to GRDB 7](Documentation/GRDB7MigrationGuide.md)
 
-**Requirements**: iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 7.0+ &bull; SQLite 3.20.0+ &bull; Swift 6+ / Xcode 16+
+**Requirements**: iOS 13.0+ / macOS 10.15+ / tvOS 13.0+ / watchOS 7.0+ &bull; SQLite 3.20.0+ &bull; Swift 6.1+ / Xcode 16.3+
 
 **Contact**:
 
@@ -100,7 +100,7 @@ try dbQueue.write { db in
 }
 
 try dbQueue.read { db in
-    let player = try Player.find(db, id: "1"))
+    let player = try Player.find(db, id: "1")
     
     let bestPlayers = try Player
         .order(\.score.desc)
@@ -199,7 +199,7 @@ try dbQueue.write { db in
     
     // Update a record
     player.score += 10
-    try score.update(db)
+    try player.update(db)
     
     try player.updateChanges { $0.score += 10 }
     
@@ -325,7 +325,7 @@ Documentation
 - [Unicode](#unicode)
 - [Memory Management](#memory-management)
 - [Data Protection](https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/databaseconnections)
-- :bulb: [Migrating From GRDB 6 to GRDB 7](Documentation/Documentation/GRDB7MigrationGuide.md)
+- :bulb: [Migrating From GRDB 6 to GRDB 7](Documentation/GRDB7MigrationGuide.md)
 - :bulb: [Why Adopt GRDB?](Documentation/WhyAdoptGRDB.md)
 - :bulb: [Recommended Practices for Designing Record Types](https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/recordrecommendedpractices)
 
@@ -841,6 +841,13 @@ You can also use the `as` type casting operator:
 ```swift
 row[...] as Int
 row[...] as Int?
+```
+
+Throwing accessors exist as well. Their use is not encouraged, because a database decoding error is a programming error. If an application stores invalid data in the database file, that is a bug that needs to be fixed:
+
+```swift
+let name = try row.decode(String.self, atIndex: 0)
+let bookCount = try row.decode(Int.self, forColumn: "bookCount")
 ```
 
 > **Warning**: avoid the `as!` and `as?` operators:
@@ -1645,7 +1652,7 @@ Records
 
 ```swift
 try dbQueue.write { db in
-    if var place = try Player.fetchOne(db, id: 1) {
+    if var player = try Player.fetchOne(db, id: 1) {
         player.score += 10
         try player.update(db)
     }
@@ -2177,7 +2184,7 @@ For more information about batch updates, see [Update Requests](#update-requests
 
 > **Note**: Upsert apis are available from SQLite 3.35.0+: iOS 15.0+, macOS 12.0+, tvOS 15.0+, watchOS 8.0+, or with a [custom SQLite build] or [SQLCipher](#encryption).
 >
-> **Note**: With regard to [persistence callbacks](#available-callbacks), an upsert behaves exactly like an insert. In particular: the `aroundInsert(_:)` and `didInsert(_:)` callbacks reports the rowid of the inserted or updated row; `willUpdate`, `aroundUdate`, `didUdate` are not called.
+> **Note**: With regard to [persistence callbacks](#available-callbacks), an upsert behaves exactly like an insert. In particular: the `aroundInsert(_:)` and `didInsert(_:)` callbacks reports the rowid of the inserted or updated row; `willUpdate`, `aroundUpdate`, `didUpdate` are not called.
 
 [PersistableRecord] provides three upsert methods:
 
@@ -2203,7 +2210,7 @@ For more information about batch updates, see [Update Requests](#update-requests
     try player.upsert(db)
     ```
 
-- `upsertAndFetch(_:onConflict:doUpdate:)` (requires [FetchableRecord] conformance)
+- `upsertAndFetch(_:onConflict:updating:doUpdate:)` (requires [FetchableRecord] conformance)
 
     Inserts or updates a record, and returns the upserted record.
     
@@ -2213,7 +2220,7 @@ For more information about batch updates, see [Update Requests](#update-requests
         
         If empty (the default), all uniqueness constraint are considered.
     
-    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Other columns are overwritten with the inserted values.
+    - `doUpdate`: a closure that returns columns assignments to perform in case of conflict. Depending on the `options` parameter, other columns are overwritten with the inserted values, or not.
         
         By default, all inserted columns but the primary key and the conflict target are overwritten.
     
@@ -2261,9 +2268,9 @@ For more information about batch updates, see [Update Requests](#update-requests
     })
     ```
 
-- `upsertAndFetch(_:as:onConflict:doUpdate:)` (does not require [FetchableRecord] conformance)
+- `upsertAndFetch(_:as:onConflict:updating:doUpdate:)` (does not require [FetchableRecord] conformance)
 
-    This method is identical to `upsertAndFetch(_:onConflict:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
+    This method is identical to `upsertAndFetch(_:onConflict:updating:doUpdate:)` described above, but you can provide a distinct [FetchableRecord] record type as a result, in order to specify the returned columns.
 
 ### Persistence Methods and the `RETURNING` clause
 
@@ -2991,7 +2998,7 @@ try player.insert(db)
 > // INSERT OR IGNORE INTO player ... RETURNING *
 > do {
 >     let insertedPlayer = try player.insertAndFetch(db) {
->     // Succesful insertion
+>     // Successful insertion
 > catch RecordError.recordNotFound {
 >     // Failed insertion due to IGNORE policy
 > }
@@ -4582,7 +4589,9 @@ Encryption
 
 **GRDB can encrypt your database with [SQLCipher](http://sqlcipher.net) v3.4+.**
 
-Use [CocoaPods](http://cocoapods.org/), and specify in your `Podfile`:
+To use SQLCipher with the [Swift Package Manager](https://swift.org/package-manager/), you must fork GRDB, and modify `Package.swift`. Instructions are in the file itself, in comments that contain "GRDB+SQLCipher".
+
+To use SQLCipher with [CocoaPods](http://cocoapods.org/), specify in your `Podfile`:
 
 ```ruby
 # GRDB with SQLCipher 4
@@ -4984,12 +4993,13 @@ try dbQueue.write { db in
 
 ## Error Handling
 
-GRDB can throw [DatabaseError](#databaseerror), [RecordError], or crash your program with a [fatal error](#fatal-errors).
+GRDB can throw [DatabaseError](#databaseerror), [RecordError], [RowDecodingError], or crash your program with a [fatal error](#fatal-errors).
 
 Considering that a local database is not some JSON loaded from a remote server, GRDB focuses on **trusted databases**. Dealing with [untrusted databases](#how-to-deal-with-untrusted-inputs) requires extra care.
 
 - [DatabaseError](#databaseerror)
 - [RecordError]
+- [RowDecodingError]
 - [Fatal Errors](#fatal-errors)
 - [How to Deal with Untrusted Inputs](#how-to-deal-with-untrusted-inputs)
 - [Error Log](#error-log)
@@ -5093,6 +5103,18 @@ do {
 }
 ```
 
+
+### RowDecodingError
+
+📖 [`RowDecodingError`](https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/rowdecodingerror)
+
+**RowDecodingError** is thrown when the application can not decode a value from a database row. For example:
+
+```swift
+let row = try Row.fetchOne(db, sql: "SELECT NULL AS name")!
+// RowDecodingError: could not decode String from database value NULL.
+let name = try row.decode(String.self, forColumn: "name")
+```
 
 ### Fatal Errors
 
@@ -6111,6 +6133,7 @@ This chapter has been superseded by [ValueObservation] and [DatabaseRegionObserv
 [persistence methods]: #persistence-methods
 [Persistence Methods and the `RETURNING` clause]: #persistence-methods-and-the-returning-clause
 [RecordError]: #recorderror
+[RowDecodingError]: #rowdecodingerror
 [Transactions and Savepoints]: https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/transactions
 [`DatabaseQueue`]: https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/databasequeue
 [Database queues]: https://swiftpackageindex.com/groue/GRDB.swift/documentation/grdb/databasequeue

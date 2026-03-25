@@ -1,10 +1,13 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+#elseif SQLCipher
+import SQLCipher
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -57,7 +60,7 @@ public final class Statement {
     
     /// The column names, ordered from left to right.
     public lazy var columnNames: [String] = {
-        // swiftlint:disable:next redundant_self_in_closure
+        // swiftlint:disable:next redundant_self
         let sqliteStatement = self.sqliteStatement
         return (0..<CInt(columnCount)).map { String(cString: sqlite3_column_name(sqliteStatement, $0)) }
     }()
@@ -141,16 +144,13 @@ public final class Statement {
         let authorizer = database.authorizer
         authorizer.reset()
         
-        var sqliteStatement: SQLiteStatement? = nil
+        var sqliteStatement: SQLiteStatement?
         let code = sqlite3_prepare_v3(
             database.sqliteConnection, statementStart, -1, prepFlags,
             &sqliteStatement, statementEnd)
         
         guard code == SQLITE_OK else {
-            throw DatabaseError(
-                resultCode: code,
-                message: database.lastErrorMessage,
-                sql: String(cString: statementStart))
+            try database.statementCompilationDidFail(at: statementStart, withResultCode: code)
         }
         
         guard let sqliteStatement else {

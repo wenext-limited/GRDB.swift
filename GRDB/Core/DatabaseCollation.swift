@@ -1,10 +1,13 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+#elseif SQLCipher
+import SQLCipher
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -53,12 +56,21 @@ public final class DatabaseCollation: Identifiable, Sendable {
         }
     }
     
+    /// Feeds the `xCompare` parameter of sqlite3_create_collation_v2
+    /// <https://www.sqlite.org/c3ref/create_collation.html>
+    typealias XCompare = @Sendable (
+        _ length1: CInt,
+        _ buffer1: UnsafeRawPointer,
+        _ length2: CInt,
+        _ buffer2: UnsafeRawPointer
+    ) -> CInt
+    
     /// The identifier of the collation.
     public var id: ID { ID(name: name) }
     
     /// The name of the collation.
     public let name: String
-    let function: @Sendable (CInt, UnsafeRawPointer?, CInt, UnsafeRawPointer?) -> ComparisonResult
+    let xCompare: XCompare
     
     /// Creates a collation.
     ///
@@ -75,21 +87,16 @@ public final class DatabaseCollation: Identifiable, Sendable {
     /// - parameters:
     ///     - name: The collation name.
     ///     - function: A function that compares two strings.
-    public init(_ name: String, function: @escaping @Sendable (String, String) -> ComparisonResult) {
+    public convenience init(_ name: String, function: @escaping @Sendable (String, String) -> ComparisonResult) {
+        self.init(name, xCompare: { (length1, buffer1, length2, buffer2) in
+            let string1 = String(decoding: UnsafeRawBufferPointer(start: buffer1, count: Int(length1)), as: UTF8.self)
+            let string2 = String(decoding: UnsafeRawBufferPointer(start: buffer2, count: Int(length2)), as: UTF8.self)
+            return CInt(function(string1, string2).rawValue)
+        })
+    }
+    
+    init(_ name: String, xCompare: @escaping XCompare) {
         self.name = name
-        self.function = { (length1, buffer1, length2, buffer2) in
-            // Buffers are not C strings: they do not end with \0.
-            let string1 = String(
-                bytesNoCopy: UnsafeMutableRawPointer(mutating: buffer1.unsafelyUnwrapped),
-                length: Int(length1),
-                encoding: .utf8,
-                freeWhenDone: false)!
-            let string2 = String(
-                bytesNoCopy: UnsafeMutableRawPointer(mutating: buffer2.unsafelyUnwrapped),
-                length: Int(length2),
-                encoding: .utf8,
-                freeWhenDone: false)!
-            return function(string1, string2)
-        }
+        self.xCompare = xCompare
     }
 }

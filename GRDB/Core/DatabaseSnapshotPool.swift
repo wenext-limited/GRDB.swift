@@ -1,11 +1,14 @@
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+#elseif SQLCipher
+import SQLCipher
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 /// A database connection that allows concurrent accesses to an unchanging
@@ -137,7 +140,7 @@ public final class DatabaseSnapshotPool {
         let walSnapshot = try db.isolated(readOnly: true) {
             try WALSnapshot(db)
         }
-        var holderConfig = Configuration()
+        var holderConfig = configuration
         holderConfig.allowsUnsafeTransactions = true
         snapshotHolder = try DatabaseQueue(path: path, configuration: holderConfig)
         try snapshotHolder.inDatabase { db in
@@ -196,7 +199,7 @@ public final class DatabaseSnapshotPool {
         var configuration = Self.configure(configuration)
         
         // Acquire and hold WAL snapshot
-        var holderConfig = Configuration()
+        var holderConfig = configuration
         holderConfig.allowsUnsafeTransactions = true
         snapshotHolder = try DatabaseQueue(path: path, configuration: holderConfig)
         let walSnapshot = try snapshotHolder.inDatabase { db in
@@ -294,36 +297,25 @@ extension DatabaseSnapshotPool: DatabaseSnapshotReader {
     }
     
     public func read<T: Sendable>(
-        _ value: @escaping @Sendable (Database) throws -> T
+        _ value: @Sendable (Database) throws -> T
     ) async throws -> T {
         guard let readerPool else {
             throw DatabaseError.connectionIsClosed()
         }
         
-        let dbAccess = CancellableDatabaseAccess()
-        return try await dbAccess.withCancellableContinuation { continuation in
-            readerPool.asyncGet { result in
-                do {
-                    let (reader, releaseReader) = try result.get()
-                    // Second async jump because that's how `Pool.async` has to be used.
-                    reader.async { db in
-                        defer {
-                            releaseReader(self.poolCompletion(db))
-                        }
-                        do {
-                            let result = try dbAccess.inDatabase(db) {
-                                try value(db)
-                            }
-                            continuation.resume(returning: result)
-                        } catch {
-                            continuation.resume(throwing: error)
-                        }
-                    }
-                } catch {
-                    continuation.resume(throwing: error)
-                }
-            }
+        let (reader, releaseReader) = try await readerPool.get()
+        var readerCompletion: PoolCompletion?
+        defer {
+            // readerCompletion might be null in cancelled database accesses
+            releaseReader(readerCompletion ?? .reuse)
         }
+        let (result, completion) = try await reader.execute { db in
+            let result = Result { try value(db) }
+            let completion = poolCompletion(db)
+            return (result, completion)
+        }
+        readerCompletion = completion
+        return try result.get()
     }
     
     public func asyncRead(
@@ -353,7 +345,7 @@ extension DatabaseSnapshotPool: DatabaseSnapshotReader {
     // `DatabaseSnapshotReader`,  because of
     // <https://github.com/apple/swift/issues/74469>.
     public func unsafeRead<T: Sendable>(
-        _ value: @escaping @Sendable (Database) throws -> T
+        _ value: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await read(value)
     }

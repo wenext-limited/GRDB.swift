@@ -1,6 +1,8 @@
 import XCTest
 import GRDB
 
+@TaskLocal private var localUUID = UUID()
+
 class DatabaseReaderTests : GRDBTestCase {
     func testAnyDatabaseReader() throws {
         // This test passes if this code compiles.
@@ -44,7 +46,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(setup(makeDatabaseQueue()))
         try test(setup(makeDatabasePool()))
         try test(setup(makeDatabasePool()).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(setup(makeDatabasePool()).makeSnapshotPool())
 #endif
     }
@@ -66,7 +68,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(setup(makeDatabaseQueue()))
         try await test(setup(makeDatabasePool()))
         try await test(setup(makeDatabasePool()).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(setup(makeDatabasePool()).makeSnapshotPool())
 #endif
     }
@@ -85,7 +87,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -104,7 +106,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -128,7 +130,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(setup(makeDatabaseQueue()))
         try test(setup(makeDatabasePool()))
         try test(setup(makeDatabasePool()).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(setup(makeDatabasePool()).makeSnapshotPool())
 #endif
     }
@@ -150,7 +152,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(setup(makeDatabaseQueue()))
         try await test(setup(makeDatabasePool()))
         try await test(setup(makeDatabasePool()).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(setup(makeDatabasePool()).makeSnapshotPool())
 #endif
     }
@@ -174,7 +176,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(setup(makeDatabaseQueue()))
         try test(setup(makeDatabasePool()))
         try test(setup(makeDatabasePool()).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(setup(makeDatabasePool()).makeSnapshotPool())
 #endif
     }
@@ -194,7 +196,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -241,7 +243,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -270,7 +272,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -290,7 +292,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -310,7 +312,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(makeDatabaseQueue())
         try test(makeDatabasePool())
         try test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
@@ -337,8 +339,44 @@ class DatabaseReaderTests : GRDBTestCase {
         try test(setup(makeDatabaseQueue(configuration: Configuration())))
         try test(setup(makeDatabasePool(configuration: Configuration())))
         try test(setup(makeDatabasePool(configuration: Configuration())).makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try test(setup(makeDatabasePool(configuration: Configuration())).makeSnapshotPool())
+#endif
+    }
+    
+    // MARK: - Task locals
+    
+    func testReadCanAccessTaskLocal() async throws {
+        func test(_ dbReader: some DatabaseReader) async throws {
+            let expectedUUID = UUID()
+            let dbUUID = try await $localUUID.withValue(expectedUUID) {
+                try await dbReader.read { db in localUUID }
+            }
+            XCTAssertEqual(dbUUID, expectedUUID)
+        }
+        
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+        try await test(makeDatabasePool().makeSnapshot())
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
+        try await test(makeDatabasePool().makeSnapshotPool())
+#endif
+    }
+    
+    func testUnsafeReadCanAccessTaskLocal() async throws {
+        func test(_ dbReader: some DatabaseReader) async throws {
+            let expectedUUID = UUID()
+            let dbUUID = try await $localUUID.withValue(expectedUUID) {
+                try await dbReader.unsafeRead { db in localUUID }
+            }
+            XCTAssertEqual(dbUUID, expectedUUID)
+        }
+        
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+        try await test(makeDatabasePool().makeSnapshot())
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
+        try await test(makeDatabasePool().makeSnapshotPool())
 #endif
     }
     
@@ -372,14 +410,14 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))
     }
     
-    func test_read_is_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
+    func test_successful_read_is_not_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
         func test(_ dbReader: some DatabaseReader) async throws {
             let semaphore = AsyncSemaphore(value: 0)
             let cancelledTaskMutex = Mutex<Task<Void, any Error>?>(nil)
@@ -387,17 +425,14 @@ class DatabaseReaderTests : GRDBTestCase {
                 await semaphore.wait()
                 try await dbReader.read { db in
                     try XCTUnwrap(cancelledTaskMutex.load()).cancel()
+                    XCTAssertTrue(Task.isCancelled)
                 }
             }
             cancelledTaskMutex.store(task)
             semaphore.signal()
             
-            do {
-                try await task.value
-                XCTFail("Expected error")
-            } catch {
-                XCTAssert(error is CancellationError)
-            }
+            // Task has completed without any error
+            try await task.value
             
             // Database access is restored after cancellation (no error is thrown)
             try await dbReader.read { db in
@@ -408,7 +443,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
@@ -446,7 +481,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
@@ -488,7 +523,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
@@ -523,14 +558,14 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))
     }
     
-    func test_unsafeRead_is_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
+    func test_successful_unsafeRead_is_not_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
         func test(_ dbReader: some DatabaseReader) async throws {
             let semaphore = AsyncSemaphore(value: 0)
             let cancelledTaskMutex = Mutex<Task<Void, any Error>?>(nil)
@@ -538,17 +573,14 @@ class DatabaseReaderTests : GRDBTestCase {
                 await semaphore.wait()
                 try await dbReader.unsafeRead { db in
                     try XCTUnwrap(cancelledTaskMutex.load()).cancel()
+                    XCTAssertTrue(Task.isCancelled)
                 }
             }
             cancelledTaskMutex.store(task)
             semaphore.signal()
             
-            do {
-                try await task.value
-                XCTFail("Expected error")
-            } catch {
-                XCTAssert(error is CancellationError)
-            }
+            // Task has completed without any error
+            try await task.value
             
             // Database access is restored after cancellation (no error is thrown)
             try await dbReader.unsafeRead { db in
@@ -559,7 +591,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
@@ -597,7 +629,7 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))
@@ -639,7 +671,55 @@ class DatabaseReaderTests : GRDBTestCase {
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(makeDatabasePool().makeSnapshot())
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
+        try await test(makeDatabasePool().makeSnapshotPool())
+#endif
+        try await test(AnyDatabaseReader(makeDatabaseQueue()))
+        try await test(AnyDatabaseWriter(makeDatabaseQueue()))
+    }
+    
+    // Regression test for https://github.com/groue/GRDB.swift/pull/1797
+    func test_cancellation_does_not_impact_other_tasks() async throws {
+        func test(_ dbReader: some DatabaseReader) async throws {
+            // Numbers that have the test fail more or less reliably
+            // (on my machine) unless the #1797 patch is applied.
+            let repeatCount = 30
+            let taskCount = 400
+            for _ in 0..<repeatCount {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for i in 0..<taskCount{
+                        let task = Task {
+                            try await dbReader.read { db in
+                                try db.execute(sql: "SELECT 1")
+                            }
+                        }
+                        group.addTask {
+                            if i.isMultiple(of: 2) {
+                                Task {
+                                    // For the test to fail, we need to be lucky, here:
+                                    // Cancellation must occur after the database access
+                                    // has completed, but before `read` has returned. This
+                                    // triggers the failure of unrelated tasks because
+                                    // the database enters the cancelled state
+                                    // (fixed by #1797).
+                                    task.cancel()
+                                }
+                                // Ignore expected CancellationError
+                                try? await task.value
+                            } else {
+                                // Unexpected CancellationError fails the test
+                                try await task.value
+                            }
+                        }
+                    }
+                    try await group.waitForAll()
+                }
+            }
+        }
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+        try await test(makeDatabasePool().makeSnapshot())
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
         try await test(makeDatabasePool().makeSnapshotPool())
 #endif
         try await test(AnyDatabaseReader(makeDatabaseQueue()))

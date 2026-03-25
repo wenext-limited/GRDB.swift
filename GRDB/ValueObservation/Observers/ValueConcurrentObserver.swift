@@ -276,7 +276,7 @@ extension ValueConcurrentObserver {
     }
 }
 
-#if SQLITE_ENABLE_SNAPSHOT || (!GRDBCUSTOMSQLITE && !GRDBCIPHER)
+#if SQLITE_ENABLE_SNAPSHOT && !SQLITE_DISABLE_SNAPSHOT
 extension ValueConcurrentObserver {
     /// Synchronously starts the observation, and returns the initial value.
     ///
@@ -806,14 +806,14 @@ extension ValueConcurrentObserver: TransactionObserver {
     
     private func asyncFetch(databaseAccess: DatabaseAccess) {
         databaseAccess.dbPool.asyncRead { [self] dbResult in
-            let isNotifying = self.lock.synchronized { self.notificationCallbacks != nil }
+            let isNotifying = lock.synchronized { self.notificationCallbacks != nil }
             guard isNotifying else { return /* Cancelled */ }
             
             let fetchResult = dbResult.flatMap { db in
                 Result { try databaseAccess.fetch(db) }
             }
             
-            self.reduce(fetchResult)
+            reduce(fetchResult)
             
             fetchingStateMutex.withLock { state in
                 switch state {

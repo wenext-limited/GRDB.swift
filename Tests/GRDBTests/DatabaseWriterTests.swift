@@ -1,6 +1,8 @@
 import XCTest
 import GRDB
 
+@TaskLocal private var localUUID = UUID()
+
 class DatabaseWriterTests : GRDBTestCase {
     
     func testDatabaseQueueUnsafeReentrantWrite() throws {
@@ -413,6 +415,48 @@ class DatabaseWriterTests : GRDBTestCase {
         try await test(makeDatabasePool())
     }
     
+    // MARK: - Task locals
+    
+    func test_write_can_access_task_local() async throws {
+        func test<T: DatabaseWriter>(_ dbWriter: T) async throws {
+            let expectedUUID = UUID()
+            let dbUUID = try await $localUUID.withValue(expectedUUID) {
+                try await dbWriter.write { db in localUUID }
+            }
+            XCTAssertEqual(dbUUID, expectedUUID)
+        }
+        
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+    }
+    
+    func test_writeWithoutTransaction_can_access_task_local() async throws {
+        func test<T: DatabaseWriter>(_ dbWriter: T) async throws {
+            let expectedUUID = UUID()
+            let dbUUID = try await $localUUID.withValue(expectedUUID) {
+                try await dbWriter.writeWithoutTransaction { db in localUUID }
+            }
+            XCTAssertEqual(dbUUID, expectedUUID)
+        }
+        
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+    }
+    
+    func test_barrierWriteWithoutTransaction_can_access_task_local() async throws {
+        func test<T: DatabaseWriter>(_ dbWriter: T) async throws {
+            let expectedUUID = UUID()
+            let dbUUID = try await $localUUID.withValue(expectedUUID) {
+                try await dbWriter.barrierWriteWithoutTransaction { db in localUUID }
+            }
+            XCTAssertEqual(dbUUID, expectedUUID)
+        }
+        
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+    }
+
+    
     // MARK: - Task Cancellation
     
     // Regression test for <https://github.com/groue/GRDB.swift/issues/1715>.
@@ -496,7 +540,7 @@ class DatabaseWriterTests : GRDBTestCase {
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))
     }
     
-    func test_writeWithoutTransaction_is_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
+    func test_successful_writeWithoutTransaction_is_not_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
         func test(_ dbWriter: some DatabaseWriter) async throws {
             let semaphore = AsyncSemaphore(value: 0)
             let cancelledTaskMutex = Mutex<Task<Void, any Error>?>(nil)
@@ -504,17 +548,14 @@ class DatabaseWriterTests : GRDBTestCase {
                 await semaphore.wait()
                 try await dbWriter.writeWithoutTransaction { db in
                     try XCTUnwrap(cancelledTaskMutex.load()).cancel()
+                    XCTAssertTrue(Task.isCancelled)
                 }
             }
             cancelledTaskMutex.store(task)
             semaphore.signal()
             
-            do {
-                try await task.value
-                XCTFail("Expected error")
-            } catch {
-                XCTAssert(error is CancellationError)
-            }
+            // Task has completed without any error
+            try await task.value
             
             // Database access is restored after cancellation (no error is thrown)
             try await dbWriter.writeWithoutTransaction { db in
@@ -758,7 +799,7 @@ class DatabaseWriterTests : GRDBTestCase {
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))
     }
     
-    func test_barrierWriteWithoutTransaction_is_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
+    func test_successful_barrierWriteWithoutTransaction_is_not_cancelled_by_Task_cancellation_performed_after_database_access() async throws {
         func test(_ dbWriter: some DatabaseWriter) async throws {
             let semaphore = AsyncSemaphore(value: 0)
             let cancelledTaskMutex = Mutex<Task<Void, any Error>?>(nil)
@@ -766,17 +807,14 @@ class DatabaseWriterTests : GRDBTestCase {
                 await semaphore.wait()
                 try await dbWriter.barrierWriteWithoutTransaction { db in
                     try XCTUnwrap(cancelledTaskMutex.load()).cancel()
+                    XCTAssertTrue(Task.isCancelled)
                 }
             }
             cancelledTaskMutex.store(task)
             semaphore.signal()
             
-            do {
-                try await task.value
-                XCTFail("Expected error")
-            } catch {
-                XCTAssert(error is CancellationError)
-            }
+            // Task has completed without any error
+            try await task.value
             
             // Database access is restored after cancellation (no error is thrown)
             try await dbWriter.barrierWriteWithoutTransaction { db in
@@ -854,6 +892,43 @@ class DatabaseWriterTests : GRDBTestCase {
             }
         }
         
+        try await test(makeDatabaseQueue())
+        try await test(makeDatabasePool())
+        try await test(AnyDatabaseWriter(makeDatabaseQueue()))
+    }
+    
+    // Regression test for https://github.com/groue/GRDB.swift/pull/1838
+    func test_cancellation_does_not_prevent_rollback() async throws {
+        func test(_ dbWriter: some DatabaseWriter) async throws {
+            // Numbers that have the test fail more or less reliably
+            // (on my machine) unless the #1838 patch is applied.
+            // When the test fails, we have a fatal error: A transaction has been left opened at the end of a database access.
+            let repeatCount = 400
+            let taskCount = 50
+            for _ in 0..<repeatCount {
+                try await withThrowingTaskGroup(of: Void.self) { group in
+                    for _ in 0..<taskCount{
+                        let task = Task {
+                            try await dbWriter.writeWithoutTransaction { db in
+                                try db.beginTransaction()
+                                try db.rollback()
+                            }
+                        }
+                        group.addTask {
+                            Task {
+                                // For the test to fail, we need to be lucky, here:
+                                // Cancellation must occur during the compilation
+                                // or the execution of the rollback statement.
+                                task.cancel()
+                            }
+                            // Ignore expected CancellationError
+                            try? await task.value
+                        }
+                    }
+                    try await group.waitForAll()
+                }
+            }
+        }
         try await test(makeDatabaseQueue())
         try await test(makeDatabasePool())
         try await test(AnyDatabaseWriter(makeDatabaseQueue()))

@@ -1,15 +1,17 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+#elseif SQLCipher
+import SQLCipher
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
 
-#if !os(Linux) && !os(Windows)
 /// NSUUID adopts DatabaseValueConvertible
 extension NSUUID: DatabaseValueConvertible {
     /// Returns a BLOB database value containing the uuid bytes.
@@ -33,16 +35,22 @@ extension NSUUID: DatabaseValueConvertible {
         switch dbValue.storage {
         case .blob(let data) where data.count == 16:
             return data.withUnsafeBytes {
-                self.init(uuidBytes: $0.bindMemory(to: UInt8.self).baseAddress)
+                #if canImport(Darwin)
+                    self.init(uuidBytes: $0.bindMemory(to: UInt8.self).baseAddress)
+                #else
+                    guard let uuidBytes = $0.bindMemory(to: UInt8.self).baseAddress else {
+                        return nil as Self?
+                    }
+                    return NSUUID(uuidBytes: uuidBytes) as? Self
+                #endif
             }
         case .string(let string):
-            return self.init(uuidString: string)
+            return NSUUID(uuidString: string) as? Self
         default:
             return nil
         }
     }
 }
-#endif
 
 /// UUID adopts DatabaseValueConvertible
 extension UUID: DatabaseValueConvertible {
@@ -88,8 +96,8 @@ extension UUID: StatementColumnConvertible {
             self.init(uuid: uuid.uuid)
         case SQLITE_BLOB:
             guard sqlite3_column_bytes(sqliteStatement, index) == 16,
-                  let blob = sqlite3_column_blob(sqliteStatement, index) else
-            {
+                  let blob = sqlite3_column_blob(sqliteStatement, index)
+            else {
                 return nil
             }
             self.init(uuid: blob.assumingMemoryBound(to: uuid_t.self).pointee)

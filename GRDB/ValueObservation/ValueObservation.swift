@@ -345,7 +345,7 @@ extension ValueObservation {
     /// - parameter reader: A DatabaseReader.
     /// - parameter scheduler: A ValueObservationScheduler. By default,
     ///   fresh values are dispatched on the cooperative thread pool.
-    /// - parameter bufferingPolicy: see the documntation
+    /// - parameter bufferingPolicy: see the documentation
     ///   of `AsyncThrowingStream`.
     public func values(
         in reader: any DatabaseReader,
@@ -511,7 +511,11 @@ extension DatabasePublishers {
             self.start = start
         }
         
-        public func receive<S>(subscriber: S) where S: Subscriber, Failure == S.Failure, Output == S.Input {
+        public func receive<S>(subscriber: S)
+        where S: Subscriber & GRDBSendableMetatype,
+              Failure == S.Failure,
+              Output == S.Input
+        {
             let subscription = ValueSubscription(
                 start: start,
                 downstream: subscriber)
@@ -521,7 +525,7 @@ extension DatabasePublishers {
     
     private class ValueSubscription<Downstream>:
         Subscription, @unchecked Sendable
-    where Downstream: Subscriber,
+    where Downstream: Subscriber & GRDBSendableMetatype,
           Downstream.Failure == Error
     {
         // @unchecked Sendable because `cancellable` and `state` are

@@ -7,6 +7,11 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 
 #### 7.x Releases
 
+- `7.10.x` Releases - [7.10.0](#7100)
+- `7.9.x` Releases - [7.9.0](#790)
+- `7.8.x` Releases - [7.8.0](#780)
+- `7.7.x` Releases - [7.7.0](#770) - [7.7.1](#771)
+- `7.6.x` Releases - [7.6.0](#760) - [7.6.1](#761)
 - `7.5.x` Releases - [7.5.0](#750)
 - `7.4.x` Releases - [7.4.0](#740) - [7.4.1](#741)
 - `7.3.x` Releases - [7.3.0](#730)
@@ -136,6 +141,84 @@ GRDB adheres to [Semantic Versioning](https://semver.org/), with one exception: 
 - [0.110.0](#01100), ...
 
 ---
+
+## 7.10.0
+
+Released February 15, 2025
+
+- **Documentation fixes** by [@bellebethcooper](https://github.com/bellebethcooper), [@Cykelero](https://github.com/Cykelero), and [@leejungyeob](https://github.com/leejungyeob) in [#1842](https://github.com/groue/GRDB.swift/pull/1842), [#1846](https://github.com/groue/GRDB.swift/pull/1846), [#1848](https://github.com/groue/GRDB.swift/pull/1848)
+- **New**: Linux adjustments by [@thinkpractice](https://github.com/thinkpractice) in [#1825](https://github.com/groue/GRDB.swift/pull/1825)
+- **New**: SQLCipher adjustments by [@R4N](https://github.com/R4N) in [#1845](https://github.com/groue/GRDB.swift/pull/1845)
+- **New**: Android and Windows adjustments by [@marcprux](https://github.com/marcprux) in [#1849](https://github.com/groue/GRDB.swift/pull/1849), [#1850](https://github.com/groue/GRDB.swift/pull/1850)
+- **New**: Configure whether UPSERT should update all columns, or no column by [@groue](https://github.com/groue) in [#1852](https://github.com/groue/GRDB.swift/pull/1852)
+
+## 7.9.0
+
+Released December 13, 2025
+
+- **Breaking Change**: Simplify the compiler checks for the availability of SQLite snapshots by [@groue](https://github.com/groue) in [#1826](https://github.com/groue/GRDB.swift/pull/1826)
+
+    This change aims at easing Linux and Android compatibility.
+    
+    **The library requirements are raised to Swift 6.1+, Xcode 16.3+.**
+
+- **Breaking Change**: Accept multiple SQLCipher libraries by [@groue](https://github.com/groue) in [#1819](https://github.com/groue/GRDB.swift/pull/1819)
+
+    This change aims at easing building GRDB against various SQLCipher flavors.
+    
+    **The compiler flag that enables new GRDB APIs for SQLCipher is now `SQLITE_HAS_CODEC`.**
+
+- **Fixed**: Fix cancellation of async tasks that use the FTS5 full-text engine by [@groue](https://github.com/groue) in [#1839](https://github.com/groue/GRDB.swift/pull/1839)
+
+    This workarounds an [SQLite bug](https://sqlite.org/forum/forumpost/95413eb410) that would trigger a GRDB crash, and improves the robustness of the library regarding database accesses cancellation and database interruption.
+
+- **New**: Improve the ergonomics of `DatabaseMigrator.registerMigration(_:foreignKeyChecks:merging:migrate)`, introduced in [#1818](https://github.com/groue/GRDB.swift/pull/1818), by accepting that the name of the merged migration is included in the set of merged migrations:
+
+    ```swift
+    // Used to fail, now OK:
+    migrator.registerMigration("v3", merging: ["v1", "v2", "v3"]) { ... }
+    //                         ~~~~                        ~~~~
+    
+    // The above code is equivalent to:
+    migrator.registerMigration("v3", merging: ["v1", "v2"]) { ... }
+    ```
+
+## 7.8.0
+
+Released October 2, 2025
+
+- **New**: Merged Migrations by [@groue](https://github.com/groue) in [#1818](https://github.com/groue/GRDB.swift/pull/1818)
+
+## 7.7.1
+
+Released September 29, 2025
+
+- **Fixed**: Fix the save() method for record types with attached triggers by [@groue](https://github.com/groue) in [#1822](https://github.com/groue/GRDB.swift/pull/1822)
+
+## 7.7.0
+
+Released September 23, 2025
+
+- **New**: Update GRDB7MigrationGuide.md reference by [@emmanuel-ferdman](https://github.com/emmanuel-ferdman) in [#1807](https://github.com/groue/GRDB.swift/pull/1807)
+- **New**: Persistable Database Views by [@groue](https://github.com/groue) in [#1810](https://github.com/groue/GRDB.swift/pull/1810)
+- **New**: Support for Xcode 26 by [@groue](https://github.com/groue) in [#1813](https://github.com/groue/GRDB.swift/pull/1813)
+- **Fixed**: Fix another race condition regarding Task cancellation, completing [#1797](https://github.com/groue/GRDB.swift/pull/1797)
+
+## 7.6.1
+
+Released July 23, 2025
+
+- **Fixed**: Fix race condition regarding Task cancellation by [@groue](https://github.com/groue) in [#1797](https://github.com/groue/GRDB.swift/pull/1797)
+ 
+## 7.6.0
+
+Released July 20, 2025
+
+- **New**: All closures that accept DatabaseComponents can throw by [@groue](https://github.com/groue) in [#1768](https://github.com/groue/GRDB.swift/pull/1768)
+- **New**: Add Sendable conformance to DatabasePreUpdateEvent.Kind, matching DatabaseEvent.Kind by [@Jason-Abbott](https://github.com/Jason-Abbott) in [#1773](https://github.com/groue/GRDB.swift/pull/1773)
+- **New**: Add custom build instruction for hardened runtime by [@Jason-Abbott](https://github.com/Jason-Abbott) in [#1776](https://github.com/groue/GRDB.swift/pull/1776)
+- **New**: Access task locals from asynchronous database accesses by [@groue](https://github.com/groue) in [#1794](https://github.com/groue/GRDB.swift/pull/1794)
+- **New**: Throwing row accessors by [@groue](https://github.com/groue) in [#1796](https://github.com/groue/GRDB.swift/pull/1796)
 
 ## 7.5.0
 
@@ -4330,7 +4413,7 @@ Released April 3, 2017
 
 **Breaking Changes**
 
-- SQLite C API is now available right from the GRBD module: you don't need any longer to import `SQLiteiPhoneOS` module et al (see documentation for [Raw SQLite Pointers](https://github.com/groue/GRDB.swift#raw-sqlite-pointers)).
+- SQLite C API is now available right from the GRDB module: you don't need any longer to import `SQLiteiPhoneOS` module et al (see documentation for [Raw SQLite Pointers](https://github.com/groue/GRDB.swift#raw-sqlite-pointers)).
 - The [manual installation procedure for WatchOS extensions](https://github.com/groue/GRDB.swift#installation) has changed.
 - [Carthage](https://github.com/Carthage/Carthage) is no longer supported. At the present time it is unable to support the various frameworks built by GRDB (system SQLite, SQLCipher, custom SQLite builds, etc.)
 

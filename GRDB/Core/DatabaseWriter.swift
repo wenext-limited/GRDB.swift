@@ -22,18 +22,18 @@ import Dispatch
 /// ### Writing into the Database
 ///
 /// - ``write(_:)-76inz``
-/// - ``write(_:)-3db50``
+/// - ``write(_:)-4gnqx``
 /// - ``writePublisher(receiveOn:updates:)``
 /// - ``writePublisher(receiveOn:updates:thenRead:)``
 /// - ``writeWithoutTransaction(_:)-4qh1w``
-/// - ``writeWithoutTransaction(_:)-67mri``
+/// - ``writeWithoutTransaction(_:)-18zhj``
 /// - ``asyncWrite(_:completion:)``
 /// - ``asyncWriteWithoutTransaction(_:)``
 ///
 /// ### Exclusive Access to the Database
 ///
 /// - ``barrierWriteWithoutTransaction(_:)-280j1``
-/// - ``barrierWriteWithoutTransaction(_:)-48d63``
+/// - ``barrierWriteWithoutTransaction(_:)-11q6c``
 /// - ``asyncBarrierWriteWithoutTransaction(_:)``
 ///
 /// ### Reading from the Latest Committed Database State
@@ -130,7 +130,7 @@ public protocol DatabaseWriter: DatabaseReader {
     ///   database access, or the error thrown by `updates`, or
     ///   `CancellationError` if the task is cancelled.
     func writeWithoutTransaction<T: Sendable>(
-        _ updates: @escaping @Sendable (Database) throws -> T
+        _ updates: @Sendable (Database) throws -> T
     ) async throws -> T
     
     /// Executes database operations, and returns their result after they have
@@ -213,7 +213,7 @@ public protocol DatabaseWriter: DatabaseReader {
     ///   database access, or the error thrown by `updates`, or
     ///   `CancellationError` if the task is cancelled.
     func barrierWriteWithoutTransaction<T: Sendable>(
-        _ updates: @escaping @Sendable (Database) throws -> T
+        _ updates: @Sendable (Database) throws -> T
     ) async throws -> T
     
     /// Schedules database operations for execution, and returns immediately.
@@ -552,7 +552,7 @@ extension DatabaseWriter {
     // This method is declared on DatabaseWriter instead of DatabaseReader,
     // so that it is not available on DatabaseSnaphot. VACUUM INTO is not
     // available inside the transaction that is kept open by DatabaseSnaphot.
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     /// Creates a new database file at the specified path with a minimum
     /// amount of disk space.
     ///
@@ -640,7 +640,7 @@ extension DatabaseWriter {
     ///   database access, or the error thrown by `updates`, or
     ///   `CancellationError` if the task is cancelled.
     public func write<T: Sendable>(
-        _ updates: @escaping @Sendable (Database) throws -> T
+        _ updates: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await writeWithoutTransaction { db in
             var result: T?
@@ -665,7 +665,7 @@ extension DatabaseWriter {
         try await writeWithoutTransaction { try $0.execute(sql: "VACUUM") }
     }
     
-#if GRDBCUSTOMSQLITE || GRDBCIPHER
+#if GRDBCUSTOMSQLITE || SQLITE_HAS_CODEC
     /// Creates a new database file at the specified path with a minimum
     /// amount of disk space.
     ///
@@ -885,7 +885,7 @@ extension AnyDatabaseWriter: DatabaseReader {
     }
     
     public func read<T: Sendable>(
-        _ value: @escaping @Sendable (Database) throws -> T
+        _ value: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await base.read(value)
     }
@@ -902,7 +902,7 @@ extension AnyDatabaseWriter: DatabaseReader {
     }
     
     public func unsafeRead<T: Sendable>(
-        _ value: @escaping @Sendable (Database) throws -> T
+        _ value: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await base.unsafeRead(value)
     }
@@ -936,7 +936,7 @@ extension AnyDatabaseWriter: DatabaseWriter {
     }
     
     public func writeWithoutTransaction<T: Sendable>(
-        _ updates: @escaping @Sendable (Database) throws -> T
+        _ updates: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await base.writeWithoutTransaction(updates)
     }
@@ -947,7 +947,7 @@ extension AnyDatabaseWriter: DatabaseWriter {
     }
     
     public func barrierWriteWithoutTransaction<T: Sendable>(
-        _ updates: @escaping @Sendable (Database) throws -> T
+        _ updates: @Sendable (Database) throws -> T
     ) async throws -> T {
         try await base.barrierWriteWithoutTransaction(updates)
     }

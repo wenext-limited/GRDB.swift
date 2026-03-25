@@ -1,10 +1,13 @@
 // Import C SQLite functions
-#if SWIFT_PACKAGE
-import GRDBSQLite
-#elseif GRDBCIPHER
+#if GRDBCIPHER // CocoaPods (SQLCipher subspec)
 import SQLCipher
-#elseif !GRDBCUSTOMSQLITE && !GRDBCIPHER
+#elseif GRDBFRAMEWORK // GRDB.xcodeproj or CocoaPods (standard subspec)
 import SQLite3
+#elseif GRDBCUSTOMSQLITE // GRDBCustom Framework
+#elseif SQLCipher
+import SQLCipher
+#else // Default SPM trait must be the default. It impossible to detect from Xcode.
+import GRDBSQLite
 #endif
 
 import Foundation
@@ -70,7 +73,10 @@ class GRDBTestCase: XCTestCase {
     var sqlQueries: [String] { _sqlQueriesMutex.load() }
     
     // Automatically updated by default dbConfiguration
-    var lastSQLQuery: String? { sqlQueries.last }
+    var lastSQLQuery: String? {
+        // Skip comments that may be inserted by triggers and virtual tables.
+        sqlQueries.last { !$0.hasPrefix("--") }
+    }
     
     override func setUp() {
         super.setUp()
@@ -268,8 +274,3 @@ struct AnyValueReducerFetcher<Fetched>: _ValueReducerFetcher {
         try _fetch(db)
     }
 }
-
-#if compiler(<6.1)
-// XCTestExpectation is Sendable starting Xcode 16.3 beta.
-extension XCTestExpectation: @unchecked Sendable { }
-#endif
